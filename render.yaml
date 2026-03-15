@@ -1,0 +1,68 @@
+## Render Infrastructure-as-Code
+## https://render.com/docs/blueprint-spec
+##
+## Deploy both services in one shot:
+##   render blueprint apply
+## Or connect this repo in the Render dashboard and it picks this up automatically.
+
+services:
+  # ── FastAPI Backend ─────────────────────────────────────────────────────
+  - type: web
+    name: feedbackos-api
+    runtime: python
+    region: oregon
+    plan: starter          # upgrade to "standard" for always-on webhook reliability
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true       # redeploys on push to main
+    envVars:
+      - key: ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false        # set manually in Render dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: FASTAPI_URL
+        fromService:
+          name: feedbackos-api
+          type: web
+          property: host
+
+  # ── Discord Bot (Background Worker) ─────────────────────────────────────
+  - type: worker
+    name: feedbackos-discord-bot
+    runtime: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python discord_bot/bot.py
+    autoDeploy: true
+    envVars:
+      - key: ENV
+        value: production
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: DISCORD_GUILD_ID
+        sync: false
+      - key: FASTAPI_URL
+        fromService:
+          name: feedbackos-api
+          type: web
+          property: host
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false

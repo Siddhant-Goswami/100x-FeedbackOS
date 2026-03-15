@@ -1,0 +1,26 @@
+{
+  "id": "e0000000-0000-0000-0000-000000000003",
+  "name": "Gradio + LLM Overlay",
+  "type": "overlay",
+  "stack_tag": "gradio",
+  "dimensions": [
+    {
+      "id": "d3000000-0000-0000-0000-000000000001",
+      "name": "Gradio Interface Design",
+      "description": "Evaluates appropriate choice of Gradio input/output components for the use case. Text inputs should use gr.Textbox with appropriate lines parameter. Chat interfaces should use gr.ChatInterface or gr.Chatbot with proper message format (list of [user, bot] tuples). File uploads should use gr.File with type restrictions. Components should have descriptive labels and placeholder text. The interface should have a title and description. Shared=True for deployment, share=False for local dev.",
+      "category": "stack_specific",
+      "sort_order": 8,
+      "is_required": true,
+      "stack_tags": ["gradio"]
+    },
+    {
+      "id": "d3000000-0000-0000-0000-000000000002",
+      "name": "LLM Response Formatting",
+      "description": "Evaluates how LLM responses are displayed to users. Markdown should be rendered when using gr.Markdown or gr.Chatbot (which renders markdown by default). Streaming responses should use generator functions with `yield` for incremental display rather than blocking until the full response arrives. Long responses should not overflow the UI container. Code blocks in responses should be syntax-highlighted. The interface should handle multi-turn conversation history correctly if applicable.",
+      "category": "stack_specific",
+      "sort_order": 9,
+      "is_required": false,
+      "stack_tags": ["gradio"]
+    }
+  ]
+}

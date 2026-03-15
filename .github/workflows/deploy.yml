@@ -1,0 +1,72 @@
+name: CI — Run Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create .env for testing
+        run: |
+          cat <<EOF > .env
+          ANTHROPIC_API_KEY=test_key
+          SUPABASE_URL=https://test.supabase.co
+          SUPABASE_KEY=test_anon_key
+          SUPABASE_SERVICE_KEY=test_service_key
+          GITHUB_TOKEN=test_github_token
+          GITHUB_WEBHOOK_SECRET=test_webhook_secret
+          DISCORD_BOT_TOKEN=test_discord_token
+          DISCORD_GUILD_ID=123456789
+          FASTAPI_URL=http://localhost:8000
+          ENV=test
+          EOF
+
+      - name: Run tests
+        run: |
+          python -m pytest tests/ -v --tb=short --no-header
+        env:
+          ENV: test
+          ANTHROPIC_API_KEY: test_key
+          SUPABASE_URL: https://test.supabase.co
+          SUPABASE_KEY: test_anon_key
+          SUPABASE_SERVICE_KEY: test_service_key
+          GITHUB_TOKEN: test_github_token
+          DISCORD_BOT_TOKEN: test_discord_token
+          DISCORD_GUILD_ID: "123456789"
+          FASTAPI_URL: http://localhost:8000
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: .pytest_cache/

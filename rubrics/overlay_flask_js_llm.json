@@ -1,0 +1,26 @@
+{
+  "id": "e0000000-0000-0000-0000-000000000004",
+  "name": "Flask + JS + LLM Overlay",
+  "type": "overlay",
+  "stack_tag": "flask",
+  "dimensions": [
+    {
+      "id": "d4000000-0000-0000-0000-000000000001",
+      "name": "API Security",
+      "description": "Evaluates basic security practices for Flask APIs. CORS must be configured to restrict allowed origins (flask-cors with origins list, not wildcard in production). All user-supplied input passed to the LLM must be validated and sanitized server-side — never trust the client. Basic rate limiting should be implemented (flask-limiter or similar) to prevent API abuse. Sensitive routes should check for an API key or auth header. The Flask debug mode must be disabled in production (debug=False or use an env variable).",
+      "category": "stack_specific",
+      "sort_order": 8,
+      "is_required": true,
+      "stack_tags": ["flask"]
+    },
+    {
+      "id": "d4000000-0000-0000-0000-000000000002",
+      "name": "Frontend LLM Integration",
+      "description": "Evaluates how the JavaScript frontend handles LLM API calls via the Flask backend. Fetch/axios calls should be async with proper await/then chains. Loading states (spinners, disabled buttons) must be shown while the API call is in progress to prevent double-submission. Error states should be surfaced to the user with a readable message (not just console.log). Streaming responses can use EventSource (SSE) for incremental display. The API base URL should come from a config constant, not be hardcoded per-call.",
+      "category": "stack_specific",
+      "sort_order": 9,
+      "is_required": false,
+      "stack_tags": ["flask", "javascript"]
+    }
+  ]
+}

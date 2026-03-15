@@ -1,0 +1,25 @@
+# Interface
+streamlit>=1.32.0
+
+# Backend
+fastapi>=0.109.0
+uvicorn>=0.27.0
+
+# Database
+supabase>=2.3.0
+
+# LLM
+anthropic>=0.18.0
+
+# GitHub
+PyGithub>=2.1.0
+
+# Discord
+discord.py>=2.3.0
+
+# Utilities
+python-dotenv>=1.0.0
+httpx>=0.26.0
+pydantic>=2.5.0
+pytest>=7.4.0
+pytest-asyncio>=0.23.0

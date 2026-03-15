@@ -1,0 +1,71 @@
+{
+  "id": "e0000000-0000-0000-0000-000000000001",
+  "name": "Universal Base Rubric",
+  "type": "universal",
+  "stack_tag": null,
+  "dimensions": [
+    {
+      "id": "d1000000-0000-0000-0000-000000000001",
+      "name": "Code Quality",
+      "description": "Evaluates code structure, naming conventions, function decomposition, and separation of concerns. Good code should be readable, modular, and maintainable. Functions should do one thing. Variable names should be descriptive. No magic numbers or hardcoded strings outside of config.",
+      "category": "code_quality",
+      "sort_order": 1,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000002",
+      "name": "Error Handling",
+      "description": "Evaluates whether the application handles failures gracefully. API calls, file operations, and network requests should be wrapped in try/except. Errors should be caught with specific exception types (not bare except). Users should see friendly error messages, not raw stack traces. Silent failures (except: pass) are a red flag.",
+      "category": "error_handling",
+      "sort_order": 2,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000003",
+      "name": "Architecture",
+      "description": "Evaluates file organization and separation of application layers. A well-structured project has distinct layers: UI/app layer, service/API layer, config layer. Business logic should not be mixed into the UI. Config values (URLs, model names, feature flags) should be centralized, not scattered across files.",
+      "category": "architecture",
+      "sort_order": 3,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000004",
+      "name": "LLM Usage",
+      "description": "Evaluates how the LLM API is integrated. API keys must come from environment variables — never hardcoded. Response parsing should handle different content block types (text, tool_use). The implementation should show awareness of token costs (e.g., not sending entire file contents unnecessarily). Rate limits and API errors should be handled.",
+      "category": "llm_usage",
+      "sort_order": 4,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000005",
+      "name": "Deployment",
+      "description": "Evaluates whether the project is deployed and accessible. A live public URL should be provided. Environment variables must be configured in the deployment platform (not just locally). The app should work end-to-end in the deployed environment. A project that only runs locally does not meet this criterion.",
+      "category": "deployment",
+      "sort_order": 5,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000006",
+      "name": "Documentation",
+      "description": "Evaluates the quality of README and inline documentation. The README should include: project description, setup instructions (including environment variable setup), how to run locally, and a live URL. Non-obvious code logic should have inline comments. Functions should have docstrings explaining what they do and what they return.",
+      "category": "documentation",
+      "sort_order": 6,
+      "is_required": true,
+      "stack_tags": []
+    },
+    {
+      "id": "d1000000-0000-0000-0000-000000000007",
+      "name": "Prompt Engineering",
+      "description": "Evaluates the quality of LLM prompts. A system message should clearly define the AI's role, constraints, and output format. Prompts should be specific and testable. User input should be sanitized or validated before being inserted into prompts. Output format instructions (JSON, markdown, bullet points) improve reliability.",
+      "category": "prompt_eng",
+      "sort_order": 7,
+      "is_required": true,
+      "stack_tags": []
+    }
+  ]
+}

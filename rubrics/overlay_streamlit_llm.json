@@ -1,0 +1,26 @@
+{
+  "id": "e0000000-0000-0000-0000-000000000002",
+  "name": "Streamlit + LLM Overlay",
+  "type": "overlay",
+  "stack_tag": "streamlit",
+  "dimensions": [
+    {
+      "id": "d2000000-0000-0000-0000-000000000001",
+      "name": "Streamlit State Management",
+      "description": "Evaluates correct use of st.session_state for maintaining application state across re-runs. Streamlit re-executes the entire script on every user interaction, so any data that must persist (conversation history, API results, user preferences) must be stored in st.session_state. Direct variable assignment outside session_state will reset on every interaction. Avoid storing large objects (entire DataFrames, model weights) in session_state unnecessarily.",
+      "category": "stack_specific",
+      "sort_order": 8,
+      "is_required": true,
+      "stack_tags": ["streamlit"]
+    },
+    {
+      "id": "d2000000-0000-0000-0000-000000000002",
+      "name": "Claude Integration Patterns",
+      "description": "Evaluates Anthropic SDK usage patterns specific to Claude. Streaming responses should use `with client.messages.stream()` for a better UX in chat apps. The `model` parameter should reference a valid Claude model string. The `max_tokens` parameter must always be set (Claude requires it). Response content should be accessed via `response.content[0].text` with a type check, not direct string coercion. SDK version compatibility should be reflected in requirements.txt.",
+      "category": "stack_specific",
+      "sort_order": 9,
+      "is_required": false,
+      "stack_tags": ["streamlit", "anthropic"]
+    }
+  ]
+}
