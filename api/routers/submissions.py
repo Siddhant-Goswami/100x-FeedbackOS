@@ -186,8 +186,13 @@ def ingest_repo(body: IngestRequest) -> dict:
         raise HTTPException(status_code=500, detail="gitingest is not installed.")
 
     # 1. Fetch code via gitingest
+    # Only pass a token if it looks like a real GitHub token; ignore placeholders.
+    import os as _os
+    raw_token = _os.environ.get("GITHUB_TOKEN", "")
+    gh_token = raw_token if raw_token.startswith(("ghp_", "github_pat_", "ghs_")) else None
+
     try:
-        summary, tree, content = _ingest(body.github_repo_url)
+        summary, tree, content = _ingest(body.github_repo_url, token=gh_token)
     except Exception as exc:
         raise HTTPException(
             status_code=422,
