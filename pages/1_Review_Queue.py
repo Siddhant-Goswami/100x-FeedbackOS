@@ -126,6 +126,49 @@ def _time_ago(ts_str: str | None) -> str:
 st.title("Review Queue")
 st.caption(f"Showing submissions assigned to you ({user['name']})")
 
+# ---------------------------------------------------------------------------
+# Submit new repo form
+# ---------------------------------------------------------------------------
+
+with st.expander("➕ Submit a new repo for review", expanded=False):
+    with st.form("ingest_form", clear_on_submit=True):
+        repo_url_input = st.text_input(
+            "GitHub repo URL",
+            placeholder="https://github.com/student/project",
+        )
+        student_email_input = st.text_input(
+            "Student email (optional — links submission to a student)",
+            placeholder="priya@100x.test",
+        )
+        ingest_submitted = st.form_submit_button("Ingest & Submit", use_container_width=True)
+
+    if ingest_submitted:
+        if not repo_url_input:
+            st.warning("Please enter a repo URL.")
+        else:
+            with st.spinner("Ingesting repo... this may take 20–40 seconds."):
+                try:
+                    resp = httpx.post(
+                        f"{FASTAPI_URL}/submissions/ingest",
+                        json={
+                            "github_repo_url": repo_url_input,
+                            "student_email": student_email_input or None,
+                            "ta_email": user.get("email"),
+                        },
+                        timeout=120.0,
+                    )
+                    resp.raise_for_status()
+                    result = resp.json()
+                    st.success(
+                        f"Repo ingested! `{result['submission_id'][:8]}...` "
+                        f"({result['content_length']:,} chars)"
+                    )
+                    st.rerun()
+                except httpx.HTTPStatusError as exc:
+                    st.error(f"Failed ({exc.response.status_code}): {exc.response.text[:300]}")
+                except Exception as exc:
+                    st.error(f"Error: {exc}")
+
 # Filters row
 col_status, col_sort, col_refresh = st.columns([2, 2, 1])
 with col_status:

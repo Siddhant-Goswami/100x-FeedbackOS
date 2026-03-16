@@ -5,15 +5,19 @@ Handles listing/fetching student project submissions and triggering
 automated stack detection.
 """
 
+import logging
 from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from supabase import Client
 
-from api.models.database import get_supabase_client, handle_response
+from api.models.database import get_supabase_client, get_service_client, handle_response
 from api.models.schemas import Submission, SubmissionListResponse
-from api.services import llm_service, github_service
+from api.services import llm_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -157,3 +161,107 @@ async def detect_stack(
         raise
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Ingest endpoint — replaces GitHub webhook
+# ---------------------------------------------------------------------------
+
+class IngestRequest(BaseModel):
+    github_repo_url: str
+    student_email: Optional[str] = None
+    assignment_id: Optional[str] = "a0000000-0000-0000-0000-000000000001"
+    ta_email: Optional[str] = None
+
+
+@router.post("/ingest")
+def ingest_repo(body: IngestRequest) -> dict:
+    """
+    Accept a public GitHub repo URL, ingest its code via gitingest,
+    create a submission record, and store the content for review.
+    """
+    try:
+        from gitingest import ingest as _ingest
+    except ImportError:
+        raise HTTPException(status_code=500, detail="gitingest is not installed.")
+
+    # 1. Fetch code via gitingest
+    try:
+        summary, tree, content = _ingest(body.github_repo_url)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Could not ingest repo '{body.github_repo_url}': {exc}",
+        )
+
+    svc_client = get_service_client()
+
+    # 2. Resolve student_id and ta_id from emails
+    student_id: Optional[str] = None
+    ta_id: Optional[str] = None
+
+    if body.student_email:
+        resp = svc_client.table("users").select("id").eq("email", body.student_email).maybe_single().execute()
+        if resp.data:
+            student_id = resp.data["id"]
+
+    if body.ta_email:
+        resp = svc_client.table("users").select("id").eq("email", body.ta_email).maybe_single().execute()
+        if resp.data:
+            ta_id = resp.data["id"]
+
+    # 3. Upsert submission record (NULL commit_sha → unique per repo_url)
+    sub_payload: dict = {
+        "github_repo_url": body.github_repo_url,
+        "commit_sha": None,
+        "status": "submitted",
+        "assignment_id": body.assignment_id,
+    }
+    if student_id:
+        sub_payload["student_id"] = student_id
+    if ta_id:
+        sub_payload["ta_id"] = ta_id
+
+    sub_resp = (
+        svc_client.table("submissions")
+        .upsert(sub_payload, on_conflict="github_repo_url,commit_sha")
+        .execute()
+    )
+    sub_data = handle_response(sub_resp)
+    if isinstance(sub_data, list):
+        sub_data = sub_data[0]
+    submission_id = sub_data["id"]
+
+    # 4. Store gitingest output in submission_files
+    svc_client.table("submission_files").upsert(
+        {"submission_id": submission_id, "filepath": "_gitingest_tree",
+         "content_preview": f"{summary}\n\n{tree}"[:10_000]},
+        on_conflict="submission_id,filepath",
+    ).execute()
+    svc_client.table("submission_files").upsert(
+        {"submission_id": submission_id, "filepath": "_gitingest_content",
+         "content_preview": content[:150_000]},
+        on_conflict="submission_id,filepath",
+    ).execute()
+
+    # 5. Stack detection from ingested tree
+    try:
+        import asyncio
+        file_lines = [l.strip() for l in tree.splitlines() if l.strip()]
+        detected = asyncio.run(llm_service.detect_stack(file_lines[:200], {"summary": summary[:3000]}))
+        svc_client.table("detected_stacks").upsert(
+            {"submission_id": submission_id, "frontend": detected.frontend,
+             "backend": detected.backend, "llm_api": detected.llm_api,
+             "deployment_platform": detected.deployment_platform,
+             "confidence": detected.confidence, "raw_tags": detected.raw_tags or []},
+            on_conflict="submission_id",
+        ).execute()
+    except Exception as exc:
+        logger.warning("Stack detection failed for %s: %s", body.github_repo_url, exc)
+
+    return {
+        "status": "ok",
+        "submission_id": submission_id,
+        "repo_url": body.github_repo_url,
+        "content_length": len(content),
+    }

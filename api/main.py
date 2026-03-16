@@ -20,7 +20,6 @@ from api.routers import (
     reviews,
     rubrics,
     submissions,
-    webhooks,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -84,7 +83,6 @@ app.include_router(rubrics.router, prefix="/rubrics", tags=["rubrics"])
 app.include_router(examples.router, prefix="/examples", tags=["examples"])
 app.include_router(calibration.router, prefix="/calibration", tags=["calibration"])
 app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
-app.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 app.include_router(dialogue.router, prefix="/dialogue", tags=["dialogue"])
 
 # ---------------------------------------------------------------------------

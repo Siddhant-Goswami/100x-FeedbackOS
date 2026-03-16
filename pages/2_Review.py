@@ -173,29 +173,42 @@ with code_col:
     if repo_url:
         st.markdown(f"[Open on GitHub ↗]({repo_url})")
 
-    if files_list:
-        file_paths = [f.get("filepath", "") for f in files_list if f.get("filepath")]
-        selected_file = st.selectbox("Browse files", ["(select a file)"] + file_paths)
+    # Check for gitingest content
+    gitingest_tree = next(
+        (f for f in files_list if f.get("filepath") == "_gitingest_tree"), None
+    )
+    gitingest_content = next(
+        (f for f in files_list if f.get("filepath") == "_gitingest_content"), None
+    )
+    regular_files = [f for f in files_list if not f.get("filepath", "").startswith("_gitingest")]
 
+    if gitingest_content:
+        tree_tab, code_tab = st.tabs(["File Tree", "Full Code"])
+        with tree_tab:
+            st.code(
+                gitingest_tree.get("content_preview", "") if gitingest_tree else "",
+                language="text",
+            )
+        with code_tab:
+            st.code(gitingest_content.get("content_preview", ""), language="text")
+
+        # Store full content in session for AI suggestions
+        st.session_state["repo_content"] = gitingest_content.get("content_preview", "")
+
+    elif regular_files:
+        file_paths = [f.get("filepath", "") for f in regular_files if f.get("filepath")]
+        selected_file = st.selectbox("Browse files", ["(select a file)"] + file_paths)
         if selected_file and selected_file != "(select a file)":
-            matching = [f for f in files_list if f.get("filepath") == selected_file]
+            matching = [f for f in regular_files if f.get("filepath") == selected_file]
             if matching:
                 preview = matching[0].get("content_preview") or "(No preview available)"
-                # Infer language for syntax highlighting
                 ext = selected_file.rsplit(".", 1)[-1] if "." in selected_file else "text"
                 lang_map = {"py": "python", "js": "javascript", "ts": "typescript",
                             "json": "json", "md": "markdown", "yml": "yaml", "yaml": "yaml",
                             "txt": "text", "sh": "bash", "html": "html", "css": "css"}
-                lang = lang_map.get(ext.lower(), "text")
-                st.code(preview, language=lang)
+                st.code(preview, language=lang_map.get(ext.lower(), "text"))
     else:
-        st.info("No files indexed for this submission yet.")
-        if st.button("Fetch file list from GitHub"):
-            with st.spinner("Detecting stack and fetching files..."):
-                result = api_post(f"/submissions/{submission_id}/detect-stack", {})
-                if result:
-                    st.success("Stack detected! Refresh to see files.")
-                    st.rerun()
+        st.info("No code ingested yet. Use the Review Queue to submit the repo URL.")
 
 # ---- Right: Rubric scoring ----
 with rubric_col:
@@ -296,10 +309,11 @@ with rubric_col:
                             use_container_width=True,
                         ):
                             with st.spinner("Thinking..."):
+                                repo_content = st.session_state.get("repo_content", "")
                                 payload = {
                                     "dimension_id": dim_id,
                                     "score": current_score,
-                                    "code_snippet": "",
+                                    "code_snippet": repo_content[:3000],
                                     "context": new_comment,
                                 }
                                 suggestion = api_post(
